@@ -1,8 +1,9 @@
 import express from "express";
 import "dotenv/config";
 import swaggerDocs from "./config/swagger.js";
-// import tiketRoutes from "./routes/tiketRoutes.js";
-// import knowledgeBaseRoutes from "./routes/knowledgeBaseRoutes.js";
+import ticketsRoutes from "./routes/ticketsRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import knowledgeBaseRoutes from "./routes/knowledgeBaseRoutes.js";
 import surveysRoutes from "./routes/surveysRoutes.js";
 
 const app = express();
@@ -18,7 +19,10 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     endpoints: {
       health: "/api/v1/health",
-      surveys: "/api/v1/surveys"
+      tickets: "/api/v1/tickets",
+      notifications: "/api/v1/notifications",
+      surveys: "/api/v1/surveys",
+      knowledgeBase: "/api/v1/knowledge-base"
     }
   });
 });
@@ -34,11 +38,14 @@ app.get("/api/v1/health", (req, res) => {
 });
 
 // API v1 routes
-// Ticket
-// app.use("/api/v1/tiket", tiketRoutes);
+// Tickets
+app.use("/api/v1/tickets", ticketsRoutes);
+
+// Notifications
+app.use("/api/v1/notifications", notificationRoutes);
 
 // Knowledge Base
-// app.use("/api/v1/knowledge-base", knowledgeBaseRoutes);
+app.use("/api/v1/knowledge-base", knowledgeBaseRoutes);
 
 // Surveys
 app.use("/api/v1/surveys", surveysRoutes);
