@@ -1,8 +1,6 @@
 import express from "express";
 import "dotenv/config";
 import swaggerDocs from "./config/swagger.js";
-import ticketsRoutes from "./routes/ticketsRoutes.js";
-import notificationRoutes from "./routes/notificationRoutes.js";
 import knowledgeBaseRoutes from "./routes/knowledgeBaseRoutes.js";
 import surveysRoutes from "./routes/surveysRoutes.js";
 
@@ -19,8 +17,6 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     endpoints: {
       health: "/api/v1/health",
-      tickets: "/api/v1/tickets",
-      notifications: "/api/v1/notifications",
       surveys: "/api/v1/surveys",
       knowledgeBase: "/api/v1/knowledge-base"
     }
@@ -38,12 +34,6 @@ app.get("/api/v1/health", (req, res) => {
 });
 
 // API v1 routes
-// Tickets
-app.use("/api/v1/tickets", ticketsRoutes);
-
-// Notifications
-app.use("/api/v1/notifications", notificationRoutes);
-
 // Knowledge Base
 app.use("/api/v1/knowledge-base", knowledgeBaseRoutes);
 
