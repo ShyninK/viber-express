@@ -2897,90 +2897,89 @@
 //       res.status(500).json({ error: "Terjadi kesalahan server" });
 //     }
 //   }
-// );
+// ===========================================
+// 19. ERROR HANDLING
+// ===========================================
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({
+    error:
+      "BASE URL-NYA SALAH YA GAIS. YANG BENAR BASE URL: https://manpro-473802.et.r.appspot.com/api/v1",
+    path: req.path,
+    method: req.method,
+  });
+});
 
-// // ===========================================
-// // 19. ERROR HANDLING
-// // ===========================================
-// // 404 Handler
-// app.use((req, res) => {
-//   res.status(404).json({
-//     error:
-//       "BASE URL-NYA SALAH YA GAIS. YANG BENAR BASE URL: https://manpro-473802.et.r.appspot.com/api/v1",
-//     path: req.path,
-//     method: req.method,
-//   });
-// });
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("Global error:", err);
 
-// // Global Error Handler
-// app.use((err, req, res, next) => {
-//   console.error("Global error:", err);
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({ error: "File terlalu besar. Maksimal 10MB" });
+  }
 
-//   if (err.code === "LIMIT_FILE_SIZE") {
-//     return res.status(400).json({ error: "File terlalu besar. Maksimal 10MB" });
-//   }
+  if (err.message === "Invalid file type") {
+    return res.status(400).json({ error: "Tipe file tidak didukung" });
+  }
 
-//   if (err.message === "Invalid file type") {
-//     return res.status(400).json({ error: "Tipe file tidak didukung" });
-//   }
+  res.status(err.status || 500).json({
+    error: err.message || "Terjadi kesalahan server",
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  });
+});
 
-//   res.status(err.status || 500).json({
-//     error: err.message || "Terjadi kesalahan server",
-//     ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-//   });
-// });
+// ===========================================
+// 20. SERVER START (Only for local development)
+// ===========================================
+if (process.env.NODE_ENV !== 'production') {
+  httpServer.listen(PORT, () => {
+    console.log(`
+================================================================
+🚀 SERVICE DESK API V2.0 + REAL-TIME CHAT 💬
+================================================================
+Port: ${PORT}
+Environment: ${process.env.NODE_ENV || "development"}
+Status: ✅ Running
+Socket.IO: ✅ Enabled (Real-time Chat)
+Roles:
+- super_admin       : Full access
+- admin_kota        : City-level admin
+- admin_opd         : Department admin
+- bidang            : Section head (verifier)
+- seksi             : Unit head (recorder)
+- teknisi           : Technician (handler)
+- pegawai_opd       : OPD Employee
+- pengguna          : End user
 
-// // ===========================================
-// // 20. SERVER START
-// // ===========================================
-// httpServer.listen(PORT, () => {
-//   console.log(`
-// ================================================================
-// 🚀 SERVICE DESK API V2.0 + REAL-TIME CHAT 💬
-// ================================================================
-// Port: ${PORT}
-// Environment: ${process.env.NODE_ENV || "development"}
-// Status: ✅ Running
-// Socket.IO: ✅ Enabled (Real-time Chat)
-// Roles:
-// - super_admin       : Full access
-// - admin_kota        : City-level admin
-// - admin_opd         : Department admin
-// - bidang            : Section head (verifier)
-// - seksi             : Unit head (recorder)
-// - teknisi           : Technician (handler)
-// - pegawai_opd       : OPD Employee
-// - pengguna          : End user
+API Documentation: http://localhost:${PORT}/api-docs
+Socket Events:
+- join_ticket_chat  : Join chat room for ticket
+- send_message      : Send chat message
+- typing_start      : Notify typing
+- typing_stop       : Stop typing
+================================================================
+  `);
+  });
+}
 
-// API Documentation: http://localhost:${PORT}/api-docs
-// Socket Events:
-// - join_ticket_chat  : Join chat room for ticket
-// - send_message      : Send chat message
-// - typing_start      : Notify typing
-// - typing_stop       : Stop typing
-// ================================================================
-//   `);
-// });
+// ===========================================
+// 21. GRACEFUL SHUTDOWN
+// ===========================================
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
+  httpServer.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
+});
 
-// // ===========================================
-// // 21. GRACEFUL SHUTDOWN
-// // ===========================================
-// process.on("SIGTERM", () => {
-//   console.log("SIGTERM received, shutting down gracefully...");
-//   httpServer.close(() => {
-//     console.log("Server closed");
-//     process.exit(0);
-//   });
-// });
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down gracefully...");
+  httpServer.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
+});
 
-// process.on("SIGINT", () => {
-//   console.log("SIGINT received, shutting down gracefully...");
-//   httpServer.close(() => {
-//     console.log("Server closed");
-//     process.exit(0);
-//   });
-// });
-
-// module.exports = { app, httpServer, io };
-
-console.log("app.js loaded");
+// Export untuk Vercel serverless
+module.exports = app;
