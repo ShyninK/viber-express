@@ -31,10 +31,11 @@ app.use("/surveys", surveysRoutes);
 // Swagger
 // swaggerDocs(app);
 
-// Export untuk Vercel (tanpa listen di serverless)
-if (process.env.VERCEL !== '1') {
+// Export app
+export default app;
+
+// Listen only in non-serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   const port = process.env.PORT || 3000;
   app.listen(port, () => console.log(`Server running on port ${port}`));
 }
-
-export default app;
