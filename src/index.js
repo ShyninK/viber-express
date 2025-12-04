@@ -10,6 +10,15 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root route
+app.get("/", (req, res) => {
+  res.json({ 
+    status: true, 
+    message: "Selamat datang di API Viber",
+    version: "1.0.0"
+  });
+});
+
 // Ticket
 // app.use("/tiket", tiketRoutes);
 
@@ -24,3 +33,6 @@ app.use("/surveys", surveysRoutes);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
+
+// Export untuk Vercel
+export default app;
