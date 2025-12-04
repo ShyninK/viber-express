@@ -31,8 +31,10 @@ app.use("/surveys", surveysRoutes);
 // Swagger
 // swaggerDocs(app);
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
+// Cloud Run uses PORT environment variable
+const port = process.env.PORT || 8080;
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on port ${port}`);
+});
 
-// Export untuk Vercel
 export default app;
