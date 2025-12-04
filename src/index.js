@@ -1,1 +1,1 @@
-console.log("🔌 Socket.IO initialized");
+console.log("🔌 Socket.IO");
