@@ -9,7 +9,25 @@ export const setupSocketIO = (io) => {
     console.log(`✅ User connected: ${socket.id}`);
 
     // User join dengan user_id
-    socket.on("user:join", async ({ userId, username }) => {
+    socket.on("user:join", async (payload) => {
+      // Handle jika payload dikirim sebagai string (bukan JSON object)
+      let data = payload;
+      if (typeof payload === 'string') {
+        try {
+          data = JSON.parse(payload);
+        } catch (e) {
+          console.error("❌ Invalid JSON payload for user:join:", payload);
+          return;
+        }
+      }
+
+      const { userId, username } = data || {};
+
+      if (!userId) {
+        console.error("❌ user:join failed: userId is missing", data);
+        return;
+      }
+
       socket.userId = userId;
       socket.username = username || `User ${userId}`;
       connectedUsers.set(userId, socket.id);
@@ -21,7 +39,25 @@ export const setupSocketIO = (io) => {
     });
 
     // Join room
-    socket.on("room:join", async ({ roomId, userId }) => {
+    socket.on("room:join", async (payload) => {
+      // Handle jika payload dikirim sebagai string
+      let data = payload;
+      if (typeof payload === 'string') {
+        try {
+          data = JSON.parse(payload);
+        } catch (e) {
+          console.error("❌ Invalid JSON payload for room:join:", payload);
+          return;
+        }
+      }
+
+      const { roomId, userId } = data || {};
+
+      if (!roomId || !userId) {
+        console.error("❌ room:join failed: roomId or userId is missing", data);
+        return;
+      }
+
       socket.join(`room:${roomId}`);
       socket.currentRoom = roomId;
       
@@ -59,9 +95,27 @@ export const setupSocketIO = (io) => {
     });
 
     // Send message
-    socket.on("message:send", async (messageData) => {
+    socket.on("message:send", async (payload) => {
       try {
-        const { roomId, userId, message, username } = messageData;
+        // Handle jika payload dikirim sebagai string
+        let messageData = payload;
+        if (typeof payload === 'string') {
+          try {
+            messageData = JSON.parse(payload);
+          } catch (e) {
+            console.error("❌ Invalid JSON payload for message:send:", payload);
+            socket.emit("message:error", { error: "Invalid JSON payload" });
+            return;
+          }
+        }
+
+        const { roomId, userId, message, username } = messageData || {};
+
+        if (!roomId || !userId || !message) {
+          console.error("❌ message:send failed: Missing required fields", messageData);
+          socket.emit("message:error", { error: "Missing required fields (roomId, userId, message)" });
+          return;
+        }
 
         // Save to database
         const newMessage = await chatModel.createMessage({
@@ -321,6 +375,176 @@ export const getUnreadCount = async (req, res) => {
     res.status(500).json({
       status: false,
       message: error.message
+    });
+  }
+};
+
+// Get chat list with details (Recent Chats)
+export const getChatList = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({
+        status: false,
+        message: "userId is required"
+      });
+    }
+
+    const chatList = await chatModel.getChatListForUser(userId);
+    
+    res.status(200).json({
+      status: true,
+      message: "Chat list retrieved successfully",
+      data: chatList
+    });
+  } catch (error) {
+    console.error("Error getting chat list:", error);
+    res.status(500).json({
+      status: false,
+      message: error.message
+    });
+  }
+};
+
+// ==========================================
+// TICKET COMMENTS (Chat per Tiket)
+// ==========================================
+
+/**
+ * Get all comments for a ticket
+ */
+export const getTicketComments = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const comments = await chatModel.getTicketComments(ticketId);
+
+    res.status(200).json({
+      status: true,
+      message: "Comments retrieved successfully",
+      data: comments
+    });
+  } catch (error) {
+    console.error("Error getting ticket comments:", error);
+    res.status(500).json({
+      status: false,
+      message: "Failed to retrieve comments",
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get public comments only (for reporters/users)
+ */
+export const getPublicTicketComments = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const comments = await chatModel.getPublicTicketComments(ticketId);
+
+    res.status(200).json({
+      status: true,
+      message: "Public comments retrieved successfully",
+      data: comments
+    });
+  } catch (error) {
+    console.error("Error getting public comments:", error);
+    res.status(500).json({
+      status: false,
+      message: "Failed to retrieve public comments",
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get internal comments only (for technicians/admins)
+ */
+export const getInternalTicketComments = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const comments = await chatModel.getInternalTicketComments(ticketId);
+
+    res.status(200).json({
+      status: true,
+      message: "Internal comments retrieved successfully",
+      data: comments
+    });
+  } catch (error) {
+    console.error("Error getting internal comments:", error);
+    res.status(500).json({
+      status: false,
+      message: "Failed to retrieve internal comments",
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Create new ticket comment
+ */
+export const createTicketComment = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const { user_id, content, is_internal } = req.body;
+
+    if (!user_id || !content) {
+      return res.status(400).json({
+        status: false,
+        message: "user_id and content are required"
+      });
+    }
+
+    const comment = await chatModel.createTicketComment({
+      ticket_id: ticketId,
+      user_id,
+      content,
+      is_internal: is_internal || false
+    });
+
+    // Emit via Socket.IO if available
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`ticket:${ticketId}`).emit("ticket:comment", {
+        ticketId,
+        comment
+      });
+    }
+
+    res.status(201).json({
+      status: true,
+      message: "Comment created successfully",
+      data: comment
+    });
+  } catch (error) {
+    console.error("Error creating ticket comment:", error);
+    res.status(500).json({
+      status: false,
+      message: "Failed to create comment",
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete ticket comment
+ */
+export const deleteTicketComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const deleted = await chatModel.deleteTicketComment(commentId);
+
+    res.status(200).json({
+      status: true,
+      message: "Comment deleted successfully",
+      data: deleted
+    });
+  } catch (error) {
+    console.error("Error deleting ticket comment:", error);
+    res.status(500).json({
+      status: false,
+      message: "Failed to delete comment",
+      error: error.message
     });
   }
 };

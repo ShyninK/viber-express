@@ -270,3 +270,68 @@
  *       201:
  *         description: Participant berhasil ditambahkan
  */
+
+/**
+ * @swagger
+ * /api/v1/chat/users/{userId}/list:
+ *   get:
+ *     summary: Get chat list for user with details
+ *     tags: [Chat]
+ *     description: Mendapatkan daftar percakapan user dengan detail lawan bicara (nama, avatar, role, OPD, pesan terakhir, unread count)
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID user
+ *     responses:
+ *       200:
+ *         description: Chat list retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         description: User ID lawan bicara
+ *                       name:
+ *                         type: string
+ *                         description: Nama lengkap atau username
+ *                       avatar:
+ *                         type: string
+ *                         description: URL avatar
+ *                       lastMessage:
+ *                         type: string
+ *                         description: Pesan terakhir
+ *                       unread:
+ *                         type: integer
+ *                         description: Jumlah pesan belum dibaca
+ *                       role:
+ *                         type: string
+ *                         description: Role user
+ *                       opd:
+ *                         type: string
+ *                         description: Nama OPD
+ *                       email:
+ *                         type: string
+ *                         description: Email user
+ *                       roomId:
+ *                         type: integer
+ *                         description: ID room chat
+ *       400:
+ *         description: userId is required
+ *       500:
+ *         description: Server error
+ */
+
